@@ -1,4 +1,4 @@
-import config
+from . import config
 from langchain_groq import ChatGroq
 def get_llm():
     """
