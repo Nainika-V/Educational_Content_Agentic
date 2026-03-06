@@ -1,3 +1,5 @@
 python-dotenv
 langchain-groq
 markitdown[all]
+
+streamlit
