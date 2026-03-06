@@ -7,4 +7,4 @@ langchain-text-splitters
 chromadb
 sentence-transformers
 langchain-huggingface
-
+streamlit
