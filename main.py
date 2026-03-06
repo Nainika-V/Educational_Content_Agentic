@@ -4,7 +4,7 @@ from prompts.system_prompt import TUTOR_SYSTEM_PROMPT, SUMMARIZATION_INSTRUCTION
 
 from tools.chunker import chunk_text
 from core.vector_store import store_chunks
-
+from tools.retrieval_tool import search_document
 
 def start_study_session(file_path):
 
@@ -18,21 +18,37 @@ def start_study_session(file_path):
 
     # Step 3: Store in ChromaDB
     vector_db = store_chunks(chunks)
-
+    '''
     # Week-1 summary still works
     messages = [
         ("system", TUTOR_SYSTEM_PROMPT),
         ("human", f"{SUMMARIZATION_INSTRUCTIONS}\n\nDOCUMENT START:\n{raw_markdown}\nDOCUMENT END")
     ]
 
+    response = llm.invoke(messages)'''
+
+    return vector_db 
+def ask_question(query, vector_db, llm):
+
+    context = search_document(query, vector_db)
+
+    messages = [
+        ("system", TUTOR_SYSTEM_PROMPT),
+        ("human", f"Answer the question using the document context.\n\nCONTEXT:\n{context}\n\nQUESTION:\n{query}")
+    ]
+
     response = llm.invoke(messages)
 
     return response.content
 
-
 if __name__ == "__main__":
 
-    output = start_study_session("Langchain.txt")
+    vector_db = start_study_session("Nischala_reddy_curr_res.pdf")
+    question = input("\nAsk a question about the document: ")
 
-    print("\n" + "="*20 + " TUTOR OUTPUT " + "="*20 + "\n")
-    print(output)
+    llm = get_llm()
+
+    answer = ask_question(question, vector_db, llm)
+
+    print("\n" + "="*20 + " ANSWER " + "="*20 + "\n")
+    print(answer)
