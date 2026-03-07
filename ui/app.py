@@ -1,9 +1,16 @@
 import streamlit as st
+import sys
+import os
 
-from components.header import show_header
-from components.sidebar import show_sidebar
-from components.chat import chat_interface
-from styles.css import load_css
+# Add the project root to the python path
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if project_root not in sys.path:
+    sys.path.append(project_root)
+
+from ui.components.header import show_header
+from ui.components.sidebar import show_sidebar
+from ui.components.chat import chat_interface
+from ui.styles.css import load_css
 
 
 st.set_page_config(
