@@ -1,4 +1,4 @@
-from langchain.agents import create_agent
+'''from langchain.agents import create_agent
 from core.provider import get_llm
 from tools.parser import text_to_md
 from tools.chunker import chunk_text
@@ -47,6 +47,85 @@ def run_agent_query(agent, query, chat_history=None):
     messages.append({"role": "user", "content": query})
     result = agent.invoke({"messages": messages})
     
+    if isinstance(result, dict) and "messages" in result:
+        return result["messages"][-1].content
+    elif hasattr(result, "content"):
+        return result.content
+    else:
+        return str(result)'''
+
+        
+from langchain.agents import create_agent
+from core.provider import get_llm
+from tools.parser import text_to_md
+from tools.chunker import chunk_text
+from core.vector_store import store_chunks
+from tools.retrieval_tool import create_retrieval_tool
+from prompts.system_prompt import TUTOR_SYSTEM_PROMPT
+
+# WEEK 3 ADDITIONS
+from tools.flashcard_tool import generate_flashcards
+from tools.quiz_tool import generate_quiz
+
+
+def process_document(file_path):
+    llm = get_llm()
+
+    # Convert document → markdown
+    raw_markdown = text_to_md(llm, file_path)
+
+    # Split into chunks
+    chunks = chunk_text(raw_markdown)
+
+    # Store in vector database
+    vector_db = store_chunks(chunks)
+
+    return vector_db
+
+
+def create_tutor_agent(vector_db):
+    
+    llm = get_llm()
+
+    # Retrieval tool
+    retrieval_tool = create_retrieval_tool(vector_db)
+
+    # WEEK 3 TOOLS
+    tools = [
+        retrieval_tool
+    ]
+
+    agent = create_agent(
+        model=llm,
+        tools=tools,
+        system_prompt=TUTOR_SYSTEM_PROMPT
+    )
+
+    return agent
+
+
+def run_agent_query(agent, query, chat_history=None):
+    """
+    Runs a query through the agent using the messages list format.
+    """
+    if chat_history is None:
+        chat_history = []
+
+    messages = []
+
+    for role, content in chat_history:
+        messages.append({
+            "role": role,
+            "content": content
+        })
+
+    messages.append({
+        "role": "user",
+        "content": query
+    })
+
+    result = agent.invoke({"messages": messages})
+
     if isinstance(result, dict) and "messages" in result:
         return result["messages"][-1].content
     elif hasattr(result, "content"):
