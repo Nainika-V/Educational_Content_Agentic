@@ -13,7 +13,7 @@ def chat_interface():
     # Check if agent is ready
     if "agent_executor" not in st.session_state:
         st.info("Please upload a document to start the conversation.")
-        return
+        return None
 
     # React to user input
     if prompt := st.chat_input("Ask something about the document..."):
@@ -25,15 +25,27 @@ def chat_interface():
         with st.chat_message("assistant"):
             with st.spinner("Thinking..."):
                 try:
-                    # Convert chat history to LangChain format if needed
-                    # For now, keeping it simple as a list of tuples
                     history = []
                     for m in st.session_state.messages[:-1]: 
                         role = "human" if m["role"] == "user" else "ai"
                         history.append((role, m["content"]))
 
+                    # Capture the current index before the agent query
+                    current_idx = st.session_state.get("menu_index", 0)
+
                     response = run_agent_query(st.session_state.agent_executor, prompt, history)
                     st.markdown(response)
                     st.session_state.messages.append({"role": "assistant", "content": response})
+
+                    # If the agent tool changed the index, trigger a rerun to switch tabs
+                    if st.session_state.get("menu_index", 0) != current_idx:
+                        st.rerun()
                 except Exception as e:
                     st.error(f"Error: {e}")
+                    return None
+
+    # Always return the last assistant message if available
+    if st.session_state.messages and st.session_state.messages[-1]["role"] == "assistant":
+        return st.session_state.messages[-1]["content"]
+    
+    return None

@@ -1,5 +1,6 @@
 import json
 from core.provider import get_llm
+from tools.parser import extract_json_from_text
 
 def generate_quiz(text: str, num_questions: int = 5):
     """
@@ -16,15 +17,15 @@ Return ONLY JSON like this:
 
 [
   {{
-    "question": "",
+    "question": "What is the capital of France?",
     "type": "mcq",
-    "options": ["A","B","C","D"],
-    "answer": ""
+    "options": ["London", "Paris", "Berlin", "Madrid"],
+    "answer": "Paris"
   }},
   {{
-    "question": "",
+    "question": "Is the earth flat?",
     "type": "true_false",
-    "answer": "True"
+    "answer": "False"
   }}
 ]
 
@@ -35,6 +36,8 @@ TEXT:
     response = llm.invoke(prompt)
 
     try:
-        return json.loads(response.content)
-    except:
+        content = response.content
+        return extract_json_from_text(content)
+    except Exception as e:
+        print(f"Error generating quiz: {e}")
         return []
