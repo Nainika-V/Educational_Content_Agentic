@@ -1,24 +1,28 @@
 import edge_tts
 import asyncio
-import os
-import time
+import re
 
-AUDIO_FOLDER = "data/audio"
+# ✅ CLEAN TEXT FUNCTION
+def clean_text(text):
+    # remove markdown symbols, borders, extra chars
+    text = re.sub(r'\|.*?\|', '', text)        # remove table rows
+    text = re.sub(r'[-_=]{2,}', '', text)      # remove lines like ----
+    text = re.sub(r'[#$*`]', '', text)         # remove symbols
+    text = re.sub(r'\s+', ' ', text)           # remove extra spaces
+    return text.strip()
 
-# create folder if not exists
-os.makedirs(AUDIO_FOLDER, exist_ok=True)
 
-async def generate_audio_async(text, file_path):
+async def text_to_speech(text, file_path="output.mp3"):
+    cleaned_text = clean_text(text)
+
     communicate = edge_tts.Communicate(
-        text=text,
-        voice="en-IN-NeerjaNeural"
+        cleaned_text,
+        voice="en-US-AriaNeural"
     )
     await communicate.save(file_path)
 
+
 def generate_audio(text):
-    file_name = f"summary_{int(time.time())}.mp3"
-    file_path = os.path.join(AUDIO_FOLDER, file_name)
-
-    asyncio.run(generate_audio_async(text, file_path))
-
-    return file_path
+    output_file = "summary.mp3"
+    asyncio.run(text_to_speech(text, output_file))
+    return output_file
