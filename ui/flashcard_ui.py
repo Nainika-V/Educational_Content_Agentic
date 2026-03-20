@@ -1,5 +1,17 @@
 import streamlit as st
 import streamlit.components.v1 as components
+from gtts import gTTS
+import io
+
+def play_audio(text):
+    tts = gTTS(text=text, lang='en')
+    
+    audio_bytes = io.BytesIO()
+    tts.write_to_fp(audio_bytes)
+    audio_bytes.seek(0)
+    
+    st.audio(audio_bytes, format='audio/mp3')
+
 
 def display_flashcards(cards):
 
@@ -90,3 +102,13 @@ def display_flashcards(cards):
     total_height = max(400, rows * 220)
 
     components.html(flashcard_html, height=total_height, scrolling=True)
+
+    # 🔊 AUDIO SECTION
+    st.markdown("## 🔊 Play Flashcard Audio")
+
+    for i, card in enumerate(cards):
+        front = card.get("front", "")
+        back = card.get("back", "")
+
+        if st.button(f"🔊 Play Card {i+1}"):
+            play_audio(f"{front}. {back}")
