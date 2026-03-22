@@ -13,8 +13,6 @@ from ui.styles.css import load_css
 from tools.flashcard_tool import generate_flashcards
 from tools.quiz_tool import generate_quiz
 from ui.flashcard_ui import display_flashcards
-
-# ✅ YOUR AUDIO FEATURE IMPORT
 from utils.audio_utils import generate_audio
 
 
@@ -26,18 +24,9 @@ st.set_page_config(
 
 st.markdown(load_css(), unsafe_allow_html=True)
 show_header()
+document_source = show_sidebar()
+st.write("App Loaded")
 
-# 🔹 Sidebar
-uploaded_file, menu = show_sidebar()
-
-# 🔹 DEBUG (to confirm app is rendering)
-st.write("✅ App Loaded")
-
-# 🔹 Fix: default menu if None
-if not menu:
-    menu = "💬 Study Chat"
-
-# Session state
 if "flashcards" not in st.session_state:
     st.session_state.flashcards = None
 if "quiz" not in st.session_state:
@@ -46,11 +35,11 @@ if "quiz" not in st.session_state:
 
 # ================== MAIN LOGIC ==================
 
-# 🔥 TEMP FIX: run even without file
+# TEMP FIX: run even without file
 if True:
 
-    # 🔹 Dummy response if no file uploaded
-    if uploaded_file:
+    #Dummy response if no file uploaded
+    if document_source:
         response = chat_interface()
     else:
         st.warning("No file uploaded. Showing demo content.")
@@ -58,16 +47,16 @@ if True:
         It enables systems to learn from data, make decisions, and improve over time.
         AI is widely used in applications like chatbots, recommendation systems, and self-driving cars."""
 
-    # ---------- 💬 STUDY CHAT ----------
-    if menu == "💬 Study Chat":
-        st.subheader("💬 Study Companion")
+    tab1, tab2, tab3 = st.tabs(["Study Chat", "Flashcards", "Quiz"])
+
+    # ---------- STUDY CHAT ----------
+    with tab1:
+        st.subheader("Study Companion")
 
         if response:
-            st.subheader("📄 Summary")
+            st.subheader("Summary")
             st.write(response)
-
-            # 🎧 YOUR AUDIO FEATURE
-            if st.button("🎧 Generate Audio Summary"):
+            if st.button("Generate Audio Summary"):
                 with st.spinner("Generating audio..."):
                     audio_path = generate_audio(response)
 
@@ -83,9 +72,9 @@ if True:
                         mime="audio/mp3"
                     )
 
-    # ---------- 🧠 FLASHCARDS ----------
-    elif menu == "🧠 Flashcards":
-        st.subheader("🧠 Knowledge Flashcards")
+    # ---------- FLASHCARDS ----------
+    with tab2:
+        st.subheader("Knowledge Flashcards")
 
         if st.button("Generate Flashcards from Document"):
             with st.spinner("Creating flashcards..."):
@@ -96,9 +85,9 @@ if True:
         else:
             st.info("Click the button to generate flashcards.")
 
-    # ---------- 📝 QUIZ ----------
-    elif menu == "📝 Quiz":
-        st.subheader("📝 Practice Quiz")
+    # ---------- QUIZ ----------
+    with tab3:
+        st.subheader("Practice Quiz")
 
         if st.button("Generate Quiz from Document"):
             with st.spinner("Creating quiz..."):
@@ -136,7 +125,7 @@ if True:
                     if st.session_state.user_answers.get(i) == q.get("answer"):
                         score += 1
 
-                st.success(f"🎯 Your Score: {score} / {len(st.session_state.quiz)}")
+                st.success(f"Your Score: {score} / {len(st.session_state.quiz)}")
 
                 with st.expander("Show Correct Answers"):
                     for i, q in enumerate(st.session_state.quiz):

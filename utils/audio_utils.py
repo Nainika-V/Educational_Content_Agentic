@@ -22,7 +22,6 @@ async def text_to_speech(text, file_path="output.mp3"):
     await communicate.save(file_path)
 
 
-def generate_audio(text):
-    output_file = "summary.mp3"
+def generate_audio(text, output_file="summary.mp3"):
     asyncio.run(text_to_speech(text, output_file))
     return output_file

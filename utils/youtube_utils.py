@@ -1,10 +1,8 @@
-from youtube_transcript_api import YouTubeTranscriptApi
+from tools.youtube_tool import get_youtube_transcript
 
 def extract_video_id(url):
-    return url.split("v=")[-1]
+    from tools.youtube_tool import extract_video_id as ev
+    return ev(url)
 
 def get_transcript(url):
-    video_id = extract_video_id(url)
-    transcript = YouTubeTranscriptApi.get_transcript(video_id)
-    text = " ".join([t["text"] for t in transcript])
-    return text
+    return get_youtube_transcript(url)

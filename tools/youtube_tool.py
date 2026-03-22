@@ -13,9 +13,9 @@ def extract_video_id(url: str) -> str:
 def get_youtube_transcript(video_url: str) -> str:
     try:
         video_id = extract_video_id(video_url)
-        transcript = YouTubeTranscriptApi.get_transcript(video_id)
-
-        text = " ".join(chunk["text"] for chunk in transcript)
+        ytt_api = YouTubeTranscriptApi()
+        transcript = ytt_api.fetch(video_id)
+        text = " ".join(chunk.text for chunk in transcript)
         return text
 
     except TranscriptsDisabled:

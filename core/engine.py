@@ -23,9 +23,7 @@ def flashcard_creator(topic: str):
     cards = generate_flashcards(context)
     st.session_state.flashcards = cards
     
-    st.session_state.menu_index = 1 
-    
-    return f"I've generated {len(cards)} flashcards on '{topic}'. The user is being redirected to the Flashcards tab now."
+    return f"I've generated {len(cards)} flashcards on '{topic}'. Please click on the 'Flashcards' tab to view them."
 
 @tool
 def quiz_creator(topic: str):
@@ -40,9 +38,7 @@ def quiz_creator(topic: str):
     quiz = generate_quiz(context)
     st.session_state.quiz = quiz
 
-    st.session_state.menu_index = 2  
-    
-    return f"I've generated a quiz on '{topic}'. The user is being redirected to the Quiz tab now."
+    return f"I've generated a quiz on '{topic}'. Please click on the 'Quiz' tab to view it."
 
 def process_document(file_path):
     llm = get_llm()

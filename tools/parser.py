@@ -38,11 +38,20 @@ from markitdown import MarkItDown
 def text_to_md(client, source: str) -> str:
     """
     Converts a document to Markdown.
-    If an image is found, it uses the groq client to describe it.
+    If it's already a text or markdown file, it reads it directly.
+    Otherwise, uses MarkItDown for conversion.
     """
 
     if not source.startswith("http") and not os.path.exists(source):
         raise FileNotFoundError(f"The file/video at {source} was not found.")
+
+    # Bypass MarkItDown for plain text/markdown files
+    if source.lower().endswith(('.txt', '.md')):
+        try:
+            with open(source, 'r', encoding='utf-8') as f:
+                return f.read()
+        except Exception as e:
+            return f"Error reading file: {str(e)}"
 
     try:
         md = MarkItDown(llm_client=client, llm_model="llama-3.2-11b-vision-preview")
@@ -51,11 +60,6 @@ def text_to_md(client, source: str) -> str:
 
     except Exception as e:
         return str(e)
-
-
-# -------------------------------------------------------
-# WEEK 3 ADDITION: JSON PARSER FOR FLASHCARDS & QUIZ
-# -------------------------------------------------------
 
 def safe_json_parse(text: str):
     """
@@ -68,8 +72,6 @@ def safe_json_parse(text: str):
         return json.loads(text)
 
     except json.JSONDecodeError:
-
-        # Remove markdown code blocks if present
         cleaned = re.sub(r"```json|```", "", text).strip()
 
         try:

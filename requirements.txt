@@ -9,4 +9,4 @@ sentence-transformers
 langchain-huggingface
 streamlit
 edge-tts               
-youtube-transcript-api
+youtube-transcript-api>=1.2.4
