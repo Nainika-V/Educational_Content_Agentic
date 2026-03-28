@@ -16,6 +16,9 @@ from ui.flashcard_ui import display_flashcards
 from utils.audio_utils import generate_audio
 from tools.adaptive_tool import generate_remedial_guide
 
+# ✅ NEW IMPORT
+from utils.analytics import show_analytics
+
 
 st.set_page_config(
     page_title="Veras Notes",
@@ -40,10 +43,9 @@ if "missed_questions" not in st.session_state:
 
 # ================== MAIN LOGIC ==================
 
-# TEMP FIX: run even without file
 if True:
 
-    #Dummy response if no file uploaded
+    # Dummy response if no file uploaded
     if document_source:
         response = chat_interface()
     else:
@@ -52,7 +54,9 @@ if True:
         It enables systems to learn from data, make decisions, and improve over time.
         AI is widely used in applications like chatbots, recommendation systems, and self-driving cars."""
 
-    tab1, tab2, tab3 = st.tabs(["Study Chat", "Flashcards", "Quiz"])
+    # ✅ UPDATED TABS (Analytics Added)
+    tab1, tab2, tab3, tab4 = st.tabs(["Study Chat", "Flashcards", "Quiz", "Analytics"])
+
 
     # ---------- STUDY CHAT ----------
     with tab1:
@@ -77,9 +81,10 @@ if True:
                         mime="audio/mp3"
                     )
 
+
     # ---------- FLASHCARDS ----------
     with tab2:
-        # subheader and grid is now handled in display_flashcards
+
         if st.button("Generate Flashcards from Document"):
             with st.spinner("Creating flashcards..."):
                 st.session_state.flashcards = generate_flashcards(response)
@@ -88,6 +93,7 @@ if True:
             display_flashcards(st.session_state.flashcards)
         else:
             st.info("Click the button to generate flashcards.")
+
 
     # ---------- QUIZ ----------
     with tab3:
@@ -131,7 +137,7 @@ if True:
                 for i, q in enumerate(st.session_state.quiz):
                     user_ans = st.session_state.user_answers.get(i)
                     correct_ans = q.get("answer")
-                    
+
                     if user_ans == correct_ans:
                         score += 1
                     else:
@@ -160,7 +166,7 @@ if True:
                 st.divider()
                 st.subheader("Personalized Remedial Guide")
                 st.info("Based on your missed questions, I can generate a custom study guide to help you master these concepts.")
-                
+
                 if st.button("Generate Remedial Guide"):
                     with st.spinner("Analyzing your results and creating a guide..."):
                         st.session_state.remedial_guide = generate_remedial_guide(
@@ -170,7 +176,7 @@ if True:
 
             if st.session_state.remedial_guide:
                 st.markdown(st.session_state.remedial_guide)
-                
+
                 if st.button("Download Remedial Guide (Text)"):
                     st.download_button(
                         label="⬇ Download Study Guide",
@@ -181,3 +187,14 @@ if True:
 
         else:
             st.info("Click the button to generate quiz.")
+
+
+    # ---------- ANALYTICS (NEW FEATURE) ----------
+    with tab4:
+
+        st.subheader("Learning Analytics")
+
+        st.info("This dashboard shows your knowledge mastery and learning progress over time.")
+
+        # show analytics charts
+        show_analytics()
