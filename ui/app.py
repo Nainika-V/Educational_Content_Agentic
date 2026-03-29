@@ -15,9 +15,7 @@ from tools.quiz_tool import generate_quiz
 from ui.flashcard_ui import display_flashcards
 from utils.audio_utils import generate_audio
 from tools.adaptive_tool import generate_remedial_guide
-
-# ✅ NEW IMPORT
-from utils.analytics import show_analytics
+from utils.analytics import show_analytics, save_quiz_result
 
 
 st.set_page_config(
@@ -53,8 +51,6 @@ if True:
         response = """Artificial Intelligence (AI) is the simulation of human intelligence in machines.
         It enables systems to learn from data, make decisions, and improve over time.
         AI is widely used in applications like chatbots, recommendation systems, and self-driving cars."""
-
-    # ✅ UPDATED TABS (Analytics Added)
     tab1, tab2, tab3, tab4 = st.tabs(["Study Chat", "Flashcards", "Quiz", "Analytics"])
 
 
@@ -148,6 +144,11 @@ if True:
                         })
 
                 st.success(f"Your Score: {score} / {len(st.session_state.quiz)}")
+                
+                # Save the result
+                topic = st.session_state.get("current_file", "General Study Session")
+                save_quiz_result(topic, score, len(st.session_state.quiz))
+                st.session_state.quiz_taken = True
 
                 if st.session_state.missed_questions:
                     st.warning(f"You missed {len(st.session_state.missed_questions)} questions.")
@@ -189,7 +190,7 @@ if True:
             st.info("Click the button to generate quiz.")
 
 
-    # ---------- ANALYTICS (NEW FEATURE) ----------
+    # ---------- ANALYTICS ----------
     with tab4:
 
         st.subheader("Learning Analytics")
