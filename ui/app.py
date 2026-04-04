@@ -1,6 +1,7 @@
 import streamlit as st
 import sys
 import os
+import datetime
 
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if project_root not in sys.path:
@@ -37,6 +38,8 @@ if "remedial_guide" not in st.session_state:
     st.session_state.remedial_guide = None
 if "missed_questions" not in st.session_state:
     st.session_state.missed_questions = []
+if "session_results" not in st.session_state:
+    st.session_state.session_results = []
 
 
 # ================== MAIN LOGIC ==================
@@ -147,7 +150,17 @@ if True:
                 
                 # Save the result
                 topic = st.session_state.get("current_file", "General Study Session")
+                accuracy = score / len(st.session_state.quiz) if len(st.session_state.quiz) > 0 else 0
                 save_quiz_result(topic, score, len(st.session_state.quiz))
+                
+                # Append to current session results
+                st.session_state.session_results.append({
+                    "topic": topic,
+                    "correct": accuracy,
+                    "type": "quiz",
+                    "date": datetime.date.today().strftime("%Y-%m-%d")
+                })
+                
                 st.session_state.quiz_taken = True
 
                 if st.session_state.missed_questions:
