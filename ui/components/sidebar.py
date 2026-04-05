@@ -4,12 +4,18 @@ from core.engine import process_document, create_tutor_agent
 from tools.parser import text_to_md
 from core.provider import get_llm
 from tools.youtube_tool import get_youtube_transcript
+from tools.planner_tool import generate_study_plan
 
 UPLOAD_FOLDER = "uploaded_docs"
 
 def show_sidebar():
     with st.sidebar:
         st.title("AI Tutor")
+
+        if st.button("Clear All Sessions"):
+            for key in list(st.session_state.keys()):
+                del st.session_state[key]
+            st.rerun()
 
         # ----------------------------
         # Navigation Menu (NEW)
@@ -21,6 +27,23 @@ def show_sidebar():
         )
 
         st.session_state.page = page
+
+        # ----------------------------
+        # NEW: Study Plan Access (AGENTIC)
+        # ----------------------------
+        if st.session_state.get("study_plan"):
+            st.divider()
+            st.subheader("🗓️ Study Schedule")
+            st.download_button(
+                label="📥 Download My Plan",
+                data=st.session_state.study_plan,
+                file_name="study_plan.md",
+                mime="text/markdown",
+                use_container_width=True
+            )
+            if st.button("📋 Show Plan in Chat", use_container_width=True):
+                st.session_state.messages.append({"role": "assistant", "content": f"### Your Study Plan:\n{st.session_state.study_plan}"})
+                st.rerun()
 
         st.divider()
         input_method = st.radio("Choose Input Method", ["PDF Upload", "YouTube Link"])
@@ -54,6 +77,9 @@ def show_sidebar():
                         llm = get_llm()
                         full_text = text_to_md(llm, file_path)
                         st.session_state.full_text = full_text
+
+                        # Generate proactive study plan (AGENTIC)
+                        st.session_state.study_plan = generate_study_plan(full_text, uploaded_file.name)
 
                         vector_db = process_document(file_path)
                         agent_executor = create_tutor_agent(vector_db)
@@ -97,6 +123,9 @@ def show_sidebar():
                             full_text = text_to_md(llm, file_path)
                             st.session_state.full_text = full_text
 
+                            # Generate proactive study plan (AGENTIC)
+                            st.session_state.study_plan = generate_study_plan(full_text, youtube_url)
+
                             vector_db = process_document(file_path)
                             agent_executor = create_tutor_agent(vector_db)
 
@@ -112,4 +141,4 @@ def show_sidebar():
                     except Exception as e:
                         st.error(f"Error: {e}")
 
-        return uploaded_file or youtube_url
+        return st.session_state.get("current_file")

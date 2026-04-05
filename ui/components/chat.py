@@ -33,6 +33,7 @@ def chat_interface():
                     response = run_agent_query(st.session_state.agent_executor, prompt, history)
                     st.markdown(response)
                     st.session_state.messages.append({"role": "assistant", "content": response})
+                    st.rerun()
                 except Exception as e:
                     st.error(f"Error: {e}")
                     return None

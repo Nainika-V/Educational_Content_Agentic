@@ -46,14 +46,25 @@ if "session_results" not in st.session_state:
 
 if True:
 
-    # Dummy response if no file uploaded
-    if document_source:
+    # Use session_state to track if a document is actually loaded
+    if st.session_state.get("current_file"):
         response = chat_interface()
     else:
         st.warning("No file uploaded. Showing demo content.")
         response = """Artificial Intelligence (AI) is the simulation of human intelligence in machines.
         It enables systems to learn from data, make decisions, and improve over time.
         AI is widely used in applications like chatbots, recommendation systems, and self-driving cars."""
+    
+    if st.session_state.get("study_plan"):
+        with st.expander("📅 Your Personalized Study Mastery Plan", expanded=True):
+            st.markdown(st.session_state.study_plan)
+            st.download_button(
+                label="📥 Download Study Plan (Markdown)",
+                data=st.session_state.study_plan,
+                file_name="my_study_plan.md",
+                mime="text/markdown"
+            )
+
     tab1, tab2, tab3, tab4 = st.tabs(["Study Chat", "Flashcards", "Quiz", "Analytics"])
 
 

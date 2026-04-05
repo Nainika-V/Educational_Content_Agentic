@@ -9,7 +9,21 @@ from prompts.system_prompt import TUTOR_SYSTEM_PROMPT
 from langchain_core.tools import tool
 from tools.flashcard_tool import generate_flashcards
 from tools.quiz_tool import generate_quiz
+from tools.planner_tool import generate_study_plan
 import os
+
+@tool
+def study_planner(topic: str):
+    """
+    Generates or updates a 3-day study plan for a specific topic based on the document.
+    """
+    import streamlit as st
+    from tools.retrieval_tool import search_document
+
+    context = search_document(topic, st.session_state.vector_db) if "vector_db" in st.session_state else st.session_state.get("full_text", "")
+    plan = generate_study_plan(context, topic)
+    st.session_state.study_plan = plan
+    return f"I have created a new study plan for '{topic}'. You can see it in the sidebar or at the top of the screen."
 
 @tool
 def flashcard_creator(topic: str):
@@ -54,20 +68,19 @@ def process_document(file_path):
 
 def create_tutor_agent(vector_db):
     llm = get_llm()
-    
-    # If vector_db is None, use a dummy retrieval tool or skip it
     if vector_db:
         retrieval_tool = create_retrieval_tool(vector_db)
         tools = [
             retrieval_tool,
             flashcard_creator,
-            quiz_creator
+            quiz_creator,
+            study_planner
         ]
     else:
-        # Agent can still use flashcard/quiz creator based on general text
         tools = [
             flashcard_creator,
-            quiz_creator
+            quiz_creator,
+            study_planner
         ]
         
     agent = create_agent(
