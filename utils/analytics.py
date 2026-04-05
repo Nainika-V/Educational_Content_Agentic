@@ -35,30 +35,57 @@ def show_analytics():
 
     st.header("Learning Analytics Dashboard")
 
-    # Check if a quiz was taken in this session
-    if not st.session_state.get("quiz_taken", False) or not st.session_state.get("session_results"):
-        st.warning("You haven't taken a quiz yet in this session. Please complete at least one quiz to unlock your learning analytics!")
+    file_path = "data/audio/performance.csv"
+    
+    # Load data from CSV if it exists
+    if os.path.exists(file_path):
+        try:
+            df = pd.read_csv(file_path)
+        except Exception as e:
+            st.error(f"Error loading analytics data: {e}")
+            return
+    else:
+        # Fallback to current session results if CSV doesn't exist yet
+        if not st.session_state.get("session_results"):
+            st.warning("You haven't taken a quiz yet. Please complete at least one quiz to unlock your learning analytics!")
+            return
+        df = pd.DataFrame(st.session_state.session_results)
+
+    if df.empty:
+        st.warning("No study data found yet. Start learning to see your progress!")
         return
 
-    # Use session results instead of historical CSV
-    df = pd.DataFrame(st.session_state.session_results)
+    # Convert date column to datetime for better sorting/plotting
+    df['date'] = pd.to_datetime(df['date'])
 
-    # Accuracy Over Time
-    st.subheader("Current Session Accuracy Over Time")
-    accuracy = df.groupby("date")["correct"].mean()
-    st.line_chart(accuracy)
+    # Dashboard Layout
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        # Accuracy Over Time
+        st.subheader("Progress Over Time")
+        accuracy = df.groupby("date")["correct"].mean()
+        st.line_chart(accuracy)
+
+    with col2:
+        # Daily Study Activity
+        st.subheader("Study Activity")
+        activity = df.groupby("date").size()
+        st.bar_chart(activity)
 
     # Topic Mastery
-    st.subheader("Current Session Topic Mastery")
-    topic_accuracy = df.groupby("topic")["correct"].mean()
+    st.subheader("Topic Mastery")
+    topic_accuracy = df.groupby("topic")["correct"].mean().sort_values(ascending=False)
     st.bar_chart(topic_accuracy)
 
-    # Daily Study Activity
-    st.subheader("Current Session Study Activity")
-    activity = df.groupby("date").size()
-    st.bar_chart(activity)
-
     # Overall Mastery
-    st.subheader("Current Session Knowledge Mastery")
-    mastery = df["correct"].mean() * 100
-    st.metric("Mastery Score", f"{mastery:.2f}%")
+    st.divider()
+    m_col1, m_col2 = st.columns(2)
+    
+    with m_col1:
+        mastery = df["correct"].mean() * 100
+        st.metric("Overall Mastery Score", f"{mastery:.2f}%")
+        
+    with m_col2:
+        total_quizzes = len(df)
+        st.metric("Total Quizzes Taken", total_quizzes)

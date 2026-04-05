@@ -9,6 +9,7 @@ from prompts.system_prompt import TUTOR_SYSTEM_PROMPT
 from langchain_core.tools import tool
 from tools.flashcard_tool import generate_flashcards
 from tools.quiz_tool import generate_quiz
+import os
 
 @tool
 def flashcard_creator(topic: str):
@@ -44,18 +45,31 @@ def process_document(file_path):
     llm = get_llm()
     raw_markdown = text_to_md(llm, file_path)
     chunks = chunk_text(raw_markdown)
-    vector_db = store_chunks(chunks)
+    
+    # Get the filename from the path to use as a unique directory
+    doc_name = os.path.basename(file_path)
+    vector_db = store_chunks(chunks, doc_name)
     return vector_db
 
 
 def create_tutor_agent(vector_db):
     llm = get_llm()
-    retrieval_tool = create_retrieval_tool(vector_db)
-    tools = [
-        retrieval_tool,
-        flashcard_creator,
-        quiz_creator
-    ]
+    
+    # If vector_db is None, use a dummy retrieval tool or skip it
+    if vector_db:
+        retrieval_tool = create_retrieval_tool(vector_db)
+        tools = [
+            retrieval_tool,
+            flashcard_creator,
+            quiz_creator
+        ]
+    else:
+        # Agent can still use flashcard/quiz creator based on general text
+        tools = [
+            flashcard_creator,
+            quiz_creator
+        ]
+        
     agent = create_agent(
         model=llm,
         tools=tools,
