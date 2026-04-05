@@ -1,4 +1,4 @@
-import streamlit as st
+'''import streamlit as st
 import sys
 import os
 import datetime
@@ -222,4 +222,223 @@ if True:
         st.info("This dashboard shows your knowledge mastery and learning progress over time.")
 
         # show analytics charts
-        show_analytics()
+        show_analytics()'''
+
+import streamlit as st
+import sys
+import os
+import datetime
+
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if project_root not in sys.path:
+    sys.path.append(project_root)
+
+from ui.components.header import show_header
+from ui.components.sidebar import show_sidebar
+from ui.components.chat import chat_interface
+from ui.styles.css import load_css
+from tools.flashcard_tool import generate_flashcards
+from tools.quiz_tool import generate_quiz
+from ui.flashcard_ui import display_flashcards
+from utils.audio_utils import generate_audio
+from tools.adaptive_tool import generate_remedial_guide
+from utils.analytics import show_analytics, save_quiz_result
+
+
+st.set_page_config(
+    page_title="Veras Notes",
+    page_icon="📚",
+    layout="wide"
+)
+
+st.markdown(load_css(), unsafe_allow_html=True)
+show_header()
+document_source = show_sidebar()
+st.write("App Loaded")
+
+# ================= SESSION STATE =================
+if "flashcards" not in st.session_state:
+    st.session_state.flashcards = None
+if "quiz" not in st.session_state:
+    st.session_state.quiz = None
+if "remedial_guide" not in st.session_state:
+    st.session_state.remedial_guide = None
+if "missed_questions" not in st.session_state:
+    st.session_state.missed_questions = []
+if "session_results" not in st.session_state:
+    st.session_state.session_results = []
+
+# ================= MAIN LOGIC =================
+
+if st.session_state.get("current_file"):
+    response = chat_interface()
+else:
+    st.warning("No file uploaded. Showing demo content.")
+    response = """Artificial Intelligence (AI) is the simulation of human intelligence in machines.
+    It enables systems to learn from data, make decisions, and improve over time.
+    AI is widely used in applications like chatbots, recommendation systems, and self-driving cars."""
+
+# Study Plan
+if st.session_state.get("study_plan"):
+    with st.expander("📅 Your Personalized Study Mastery Plan", expanded=True):
+        st.markdown(st.session_state.study_plan)
+        st.download_button(
+            label="📥 Download Study Plan (Markdown)",
+            data=st.session_state.study_plan,
+            file_name="my_study_plan.md",
+            mime="text/markdown"
+        )
+
+tab1, tab2, tab3, tab4 = st.tabs(["Study Chat", "Flashcards", "Quiz", "Analytics"])
+
+
+# ---------- STUDY CHAT ----------
+with tab1:
+    st.subheader("Study Companion")
+
+    if response:
+        st.subheader("Summary")
+        st.write(response)
+
+        if st.button("Generate Audio Summary"):
+            with st.spinner("Generating audio..."):
+                audio_path = generate_audio(response)
+                audio_bytes = open(audio_path, "rb").read()
+
+                st.success("Audio generated!")
+                st.audio(audio_bytes, format="audio/mp3")
+
+                st.download_button(
+                    label="⬇ Download Audio",
+                    data=audio_bytes,
+                    file_name="summary.mp3",
+                    mime="audio/mp3"
+                )
+
+
+# ---------- FLASHCARDS ----------
+with tab2:
+    if st.button("Generate Flashcards from Document"):
+        with st.spinner("Creating flashcards..."):
+            st.session_state.flashcards = generate_flashcards(response)
+
+    if st.session_state.flashcards:
+        display_flashcards(st.session_state.flashcards)
+    else:
+        st.info("Click the button to generate flashcards.")
+
+
+# ---------- QUIZ ----------
+with tab3:
+    st.subheader("Practice Quiz")
+
+    if st.button("Generate New Quiz"):
+        with st.spinner("Creating quiz..."):
+            st.session_state.quiz = generate_quiz(response)
+            st.session_state.remedial_guide = None
+            st.session_state.missed_questions = []
+
+            if "user_answers" in st.session_state:
+                del st.session_state.user_answers
+
+    if st.session_state.quiz:
+
+        if "user_answers" not in st.session_state:
+            st.session_state.user_answers = {}
+
+        for i, q in enumerate(st.session_state.quiz):
+            st.write(f"**Q{i+1}: {q.get('question')}**")
+
+            if q.get("type") == "mcq":
+                st.session_state.user_answers[i] = st.radio(
+                    "Select Answer",
+                    q.get("options", []),
+                    key=f"quiz_{i}"
+                )
+
+            elif q.get("type") == "true_false":
+                st.session_state.user_answers[i] = st.radio(
+                    "Answer",
+                    ["True", "False"],
+                    key=f"quiz_{i}"
+                )
+
+        # ===== SUBMIT QUIZ =====
+        if st.button("Submit My Quiz"):
+            score = 0
+            st.session_state.missed_questions = []
+
+            for i, q in enumerate(st.session_state.quiz):
+                user_ans = st.session_state.user_answers.get(i)
+                correct_ans = q.get("answer")
+
+                if user_ans == correct_ans:
+                    score += 1
+                else:
+                    st.session_state.missed_questions.append({
+                        "question": q.get("question"),
+                        "answer": correct_ans,
+                        "user_answer": user_ans
+                    })
+
+            total_questions = len(st.session_state.quiz)
+            st.success(f"Your Score: {score} / {total_questions}")
+
+            # Save analytics
+            topic = st.session_state.get("current_file", "General Study Session")
+            accuracy = score / total_questions if total_questions > 0 else 0
+            save_quiz_result(topic, score, total_questions)
+
+            st.session_state.session_results.append({
+                "topic": topic,
+                "correct": accuracy,
+                "type": "quiz",
+                "date": datetime.date.today().strftime("%Y-%m-%d")
+            })
+
+            st.session_state.quiz_taken = True
+
+            if st.session_state.missed_questions:
+                st.warning(f"You missed {len(st.session_state.missed_questions)} questions.")
+            else:
+                st.balloons()
+                st.success("Perfect Score!")
+
+            # ===== AUTO REMEDIATION =====
+            if accuracy < 0.7:
+                st.divider()
+                st.subheader("📘 Personalized Remedial Guide (Auto-Generated)")
+
+                with st.spinner("Generating your personalized improvement plan..."):
+                    st.session_state.remedial_guide = generate_remedial_guide(
+                        st.session_state.missed_questions,
+                        response
+                    )
+
+            # Show answers
+            with st.expander("Show Correct Answers"):
+                for i, q in enumerate(st.session_state.quiz):
+                    st.write(
+                        f"**Q{i+1}:** {q.get('question')} | **Correct: {q.get('answer')}**"
+                    )
+
+        # ===== DISPLAY REMEDIAL GUIDE =====
+        if st.session_state.remedial_guide:
+            st.markdown(st.session_state.remedial_guide)
+
+            st.download_button(
+                label="⬇ Download Study Guide",
+                data=st.session_state.remedial_guide,
+                file_name="remedial_study_guide.md",
+                mime="text/markdown"
+            )
+
+    else:
+        st.info("Click the button to generate quiz.")
+
+
+# ---------- ANALYTICS ----------
+with tab4:
+    st.subheader("Learning Analytics")
+    st.info("This dashboard shows your knowledge mastery and learning progress over time.")
+    show_analytics()
